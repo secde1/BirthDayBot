@@ -24,7 +24,7 @@ db_pool = None
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=API_TOKEN)
-# dp = Dispatcher(bot)
+
 dp = Dispatcher(bot, storage=storage)
 
 
@@ -105,14 +105,12 @@ class EmployeeForm(StatesGroup):
     WaitingForPhoto = State()
 
 
-# Начало процесса добавления сотрудника
 @dp.message_handler(commands=['addemployee'], state="*")
 async def add_employee_start(message: Message):
     await EmployeeForm.WaitingForName.set()
     await message.answer("Введите имя сотрудника:")
 
 
-# Обработка имени
 @dp.message_handler(state=EmployeeForm.WaitingForName)
 async def employee_name_entered(message: Message, state: FSMContext):
     await state.update_data(first_name=message.text)
@@ -153,22 +151,18 @@ async def process_position(message: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=['photo'], state=EmployeeForm.WaitingForPhoto)
 async def process_photo(message: types.Message, state: FSMContext):
-    # Получаем file_id последней фотографии в сообщении
     photo_file_id = message.photo[-1].file_id
 
-    # Сохраняем file_id фотографии в контекст состояния
     async with state.proxy() as data:
         data['photo'] = photo_file_id
 
-    # Получаем остальные данные из контекста состояния
     async with state.proxy() as data:
         first_name = data.get('first_name')
         last_name = data.get('last_name')
         birth_date = data.get('birth_date')
         position = data.get('position')
-        photo = data.get('photo')  # Здесь уже не должно быть KeyError
+        photo = data.get('photo')
 
-        # Здесь предполагается, что у вас уже есть должность в базе данных и вы можете получить её ID
         async with db_pool.acquire() as connection:
             await connection.execute('''
                 INSERT INTO Employees (first_name, last_name, birth_date, position_id, photo_url)
@@ -238,9 +232,9 @@ async def send_welcome(message: types.Message):
     await message.reply("Привет! Я бот напоминатель.")
 
 
-# @dp.message_handler(content_types=['text'])
-# async def handle_unknown_message(message: types.Message):
-#     await message.reply("Вы отправили не существующий запрос.")
+@dp.message_handler(content_types=['text'])
+async def handle_unknown_message(message: types.Message):
+    await message.reply("Вы отправили не существующий запрос.")
 
 
 async def scheduler():
