@@ -128,14 +128,9 @@ async def process_last_name(message: types.Message, state: FSMContext):
 
 @dp.message_handler(state=EmployeeForm.WaitingForBirthDate)
 async def process_birth_date(message: types.Message, state: FSMContext):
-    # Преобразование строки в объект даты
     birth_date = datetime.strptime(message.text, '%Y-%m-%d').date()
-
-    # Сохранение объекта даты в контекст состояния
     async with state.proxy() as data:
         data['birth_date'] = birth_date
-
-    # Переход к следующему состоянию
     await EmployeeForm.next()
     await message.reply("Введите должность сотрудника:")
 
