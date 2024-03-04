@@ -8,9 +8,11 @@ from aiogram import Bot, Dispatcher, types, executor
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from InlineKeyboardMarkup_ import make_admin_keyboard
 from aiogram.dispatcher import FSMContext
-from aiogram.types import Message
+
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+
+from db import create_tables
 
 storage = MemoryStorage()
 
@@ -48,14 +50,14 @@ async def handle_admin_buttons(callback_query: types.CallbackQuery):
         return
 
     if callback_query.data == "addposition":
-        await callback_query.message.answer(
-            "Отправьте название новой должности в формате: /addposition Название_должности")
+        await callback_query.message.answer("Отправьте название новой должности в формате: /addposition Название_должности")
     elif callback_query.data == "addemployee":
-        await callback_query.message.answer(
-            "Отправьте данные нового сотрудника в формате: /addemployee Имя; Фамилия; Дата рождения; Должность; Ссылка на фото")
+        await EmployeeForm.WaitingForName.set()
+        await callback_query.message.answer("Пожалуйста, введите имя сотрудника:")
     elif callback_query.data == "getemployees":
         await send_all_employees(callback_query.message)
     await callback_query.answer()
+
 
 
 async def create_db_pool():
@@ -106,13 +108,13 @@ class EmployeeForm(StatesGroup):
 
 
 @dp.message_handler(commands=['addemployee'], state="*")
-async def add_employee_start(message: Message):
+async def add_employee_start(message: types.Message):
     await EmployeeForm.WaitingForName.set()
     await message.answer("Введите имя сотрудника:")
 
 
 @dp.message_handler(state=EmployeeForm.WaitingForName)
-async def employee_name_entered(message: Message, state: FSMContext):
+async def employee_name_entered(message: types.Message, state: FSMContext):
     await state.update_data(first_name=message.text)
     await EmployeeForm.next()
     await message.answer("Введите фамилию сотрудника:")
@@ -234,12 +236,13 @@ async def handle_unknown_message(message: types.Message):
 
 async def scheduler():
     scheduler = AsyncIOScheduler(timezone="Asia/Tashkent")
-    scheduler.add_job(birthday_reminder, 'cron', hour=16, minute=48)
+    scheduler.add_job(birthday_reminder, 'cron', hour=18, minute=22)
     scheduler.start()
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
+    loop.run_until_complete(create_tables())
     loop.create_task(scheduler())
     loop.run_until_complete(create_db_pool())
     executor.start_polling(dp, skip_updates=True)

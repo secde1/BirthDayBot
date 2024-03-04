@@ -30,20 +30,10 @@ async def create_tables():
         );
     ''')
 
-    print("Tables created successfully.")
+    print("Таблицы успешно создано.")
 
     await conn.close()
 
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(create_tables())
-
-
-
-
-
-
-
-
-
-
